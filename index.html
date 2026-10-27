@@ -188,6 +188,20 @@
             }
         }
 
+        function cleanCell(val) {
+            if (!val || val === '' || val === '-' || val.includes('12/30/1899')) return '-';
+            // If it's a full date-time string containing 1899, extract just the time portion if possible, else dash
+            if (val.includes('1899')) {
+                const parts = val.split(' ');
+                // If there's a time component, try to return it, otherwise '-'
+                for (let p of parts) {
+                    if (p.includes(':') && !p.includes('1899')) return p;
+                }
+                return '-';
+            }
+            return val;
+        }
+
         function parseCSVAndRender(csvText) {
             const lines = csvText.split('\n').map(line => {
                 return line.split(',').map(val => val.replace(/^"|"$/g, '').trim());
@@ -220,10 +234,11 @@
                 if (currentSection === 'trainings' && cols[0]) trainingRows.push(cols);
             });
 
+            // Render with corrected headers: Exams/Meetings/Trainings now show [Subject/Name, Section, Date, Start Time, End Time]
             renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows);
-            renderTable('exams-container', ['Exam / Subject', 'Section', 'Date', 'From', 'To'], examRows);
-            renderTable('meetings-container', ['Meeting Name', 'Section', 'Date', 'From', 'To'], meetingRows);
-            renderTable('trainings-container', ['Program Name', 'Section', 'Start', 'End', 'Time'], trainingRows);
+            renderTable('exams-container', ['Exam / Subject', 'Section', 'Date', 'Start Time', 'End Time'], examRows);
+            renderTable('meetings-container', ['Meeting Name', 'Section', 'Date', 'Start Time', 'End Time'], meetingRows);
+            renderTable('trainings-container', ['Program Name', 'Section', 'Start Date', 'End Date', 'Time'], trainingRows);
         }
 
         function renderTable(containerId, headers, rows) {
@@ -241,8 +256,13 @@
 
             validRows.forEach(row => {
                 html += `<tr>`;
-                row.forEach(cell => {
-                    html += `<td>${cell || '-'}</td>`;
+                row.forEach((cell, index) => {
+                    // Clean up time/date display for columns 3 and 4 in event tables
+                    let displayVal = cell;
+                    if (containerId !== 'guesthouse-container' && (index === 3 || index === 4)) {
+                        displayVal = cleanCell(cell);
+                    }
+                    html += `<td>${displayVal || '-'}</td>`;
                 });
                 html += `</tr>`;
             });
