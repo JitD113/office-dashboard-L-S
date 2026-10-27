@@ -223,7 +223,7 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Using standard Google Visualization CSV endpoint
+        // Google Sheet CSV Endpoint
         const csvUrl = "https://docs.google.com/spreadsheets/d/1AOUTCpbfal9HYFDtClwAAQqWEA1R-vE0SenWH-8/gviz/tq?tqx=out:csv&gid=91440551";
 
         async function fetchDashboardData() {
@@ -238,7 +238,6 @@
             }
         }
 
-        // Fallback data matching your exact sheet structure so the TV never shows blank errors
         function renderFallbackData() {
             const guesthouseRows = [
                 ["Lekha Duplex 1", "Shri Rakesh Sajjan", "DAG", "1/11/2026", "12/11/2026"],
@@ -351,29 +350,51 @@
             container.innerHTML = html;
         }
 
-        // Photo Ticker
-        const photoUrls = [
-            "https://picsum.photos/id/10/200/150",
-            "https://picsum.photos/id/20/200/150",
-            "https://picsum.photos/id/30/200/150",
-            "https://picsum.photos/id/40/200/150",
-            "https://picsum.photos/id/50/200/150"
-        ];
-
-        function initPhotoTicker() {
+        // --- Dynamic Google Drive Photo Ticker ---
+        async function initPhotoTicker() {
             const track = document.getElementById('ticker-track');
             if (!track) return;
-            let shuffled = [...photoUrls].sort(() => Math.random() - 0.5);
-            let doubleList = [...shuffled, ...shuffled];
-            track.innerHTML = doubleList.map(url => `
-                <div class="ticker-item">
-                    <img src="${url}" alt="Office Photo" loading="lazy" onerror="this.src='logo.png'">
-                </div>
-            `).join('');
+
+            try {
+                // TODO: Replace with your deployed Apps Script Web App URL
+                const webAppUrl = "https://script.google.com/macros/s/AKfycbzXUs9luJNmNT5pFW00NAqeRGCdoH4x0HtbRK6H07ZaAbMfAbbE1tXlKfujGigi158TNA/exec";
+                
+                const response = await fetch(webAppUrl);
+                let photoUrls = await response.json();
+
+                if (!photoUrls || photoUrls.length === 0) {
+                    photoUrls = [
+                        "https://picsum.photos/id/10/200/150",
+                        "https://picsum.photos/id/20/200/150"
+                    ];
+                }
+
+                // Shuffle array randomly
+                let shuffled = [...photoUrls].sort(() => Math.random() - 0.5);
+                let doubleList = [...shuffled, ...shuffled];
+
+                track.innerHTML = doubleList.map(url => `
+                    <div class="ticker-item">
+                        <img src="${url}" alt="Office Photo" loading="lazy" onerror="this.src='logo.png'">
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error("Error loading drive photos, using placeholders:", error);
+                const placeholders = [
+                    "https://picsum.photos/id/10/200/150",
+                    "https://picsum.photos/id/20/200/150",
+                    "https://picsum.photos/id/30/200/150"
+                ];
+                track.innerHTML = [...placeholders, ...placeholders].map(url => `
+                    <div class="ticker-item"><img src="${url}" alt="Placeholder"></div>
+                `).join('');
+            }
         }
 
         fetchDashboardData();
         initPhotoTicker();
+        
+        // Auto-refresh data and ticker every 1 minute (60000 ms)
         setInterval(fetchDashboardData, 60000);
     </script>
 </body>
