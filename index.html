@@ -21,24 +21,11 @@
         }
         header {
             background-color: #2a1b15;
-            padding: 15px 30px;
+            padding: 12px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid #ea580c;
-        }
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .logo-img {
-            height: 45px;
-            width: auto;
-            background: white;
-            padding: 3px;
-            border-radius: 4px;
-            object-fit: contain;
         }
         header h1 {
             font-size: 1.35rem;
@@ -46,11 +33,24 @@
             letter-spacing: 0.5px;
             color: #fb923c;
         }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
         .clock {
             font-size: 1.1rem;
             font-weight: 500;
             color: #cbd5e1;
             white-space: nowrap;
+        }
+        .logo-img {
+            height: 42px;
+            width: auto;
+            background: white;
+            padding: 3px;
+            border-radius: 4px;
+            object-fit: contain;
         }
         .main-grid {
             flex: 1;
@@ -121,11 +121,11 @@
 <body>
 
     <header>
-        <div class="header-left">
+        <h1>Logistics & Support Section, O/o the PAG (Audit), Telangana</h1>
+        <div class="header-right">
+            <div class="clock" id="live-clock">Loading...</div>
             <img src="logo.png" alt="CAG Logo" class="logo-img" onerror="this.style.display='none'">
-            <h1>Logistics & Support Section, O/o the PAG (Audit), Telangana</h1>
         </div>
-        <div class="clock" id="live-clock">Loading...</div>
     </header>
 
     <div class="main-grid">
@@ -174,7 +174,6 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Updated with your active spreadsheet ID and MasterFeed gid=91440551
         const csvUrl = "https://docs.google.com/spreadsheets/d/1AOUTCpbfal9HYFDtClwAAQqWEA1R-vE0SenWH-8/export?format=csv&gid=91440551";
 
         async function fetchDashboardData() {
@@ -231,44 +230,4 @@
                 if (currentSection === 'meetings' && cols[0]) {
                     meetingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4])]);
                 }
-                if (currentSection === 'trainings' && cols[0]) {
-                    trainingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5])]);
-                }
-            });
-
-            renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows);
-            renderTable('exams-container', ['Exam / Subject', 'Section', 'Date From', 'Date To', 'Start Time', 'End Time'], examRows);
-            renderTable('meetings-container', ['Meeting Name', 'Section', 'Date', 'Start Time', 'End Time'], meetingRows);
-            renderTable('trainings-container', ['Program Name', 'Section', 'Start Date', 'End Date', 'Start Time', 'End Time'], trainingRows);
-        }
-
-        function renderTable(containerId, headers, rows) {
-            const container = document.getElementById(containerId);
-            const validRows = rows.filter(row => row.some(cell => cell && cell !== '-' && cell !== ''));
-
-            if (!validRows || validRows.length === 0) {
-                container.innerHTML = `<div class="empty-msg">No active entries currently.</div>`;
-                return;
-            }
-
-            let html = `<table><thead><tr>`;
-            headers.forEach(h => html += `<th>${h}</th>`);
-            html += `</tr></thead><tbody>`;
-
-            validRows.forEach(row => {
-                html += `<tr>`;
-                row.forEach(cell => {
-                    html += `<td>${cell || '-'}</td>`;
-                });
-                html += `</tr>`;
-            });
-
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-        }
-
-        fetchDashboardData();
-        setInterval(fetchDashboardData, 300000);
-    </script>
-</body>
-</html>
+                if (currentSection === 'trainings
