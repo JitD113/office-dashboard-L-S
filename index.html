@@ -175,6 +175,7 @@
         updateClock();
 
         const csvUrl = "https://docs.google.com/spreadsheets/d/1AOUTCpbfal9HYFDtClwAAQqWEA1R-vE0SenWH-8/gviz/tq?tqx=out:csv&gid=91440551";
+
         async function fetchDashboardData() {
             try {
                 const response = await fetch(csvUrl);
@@ -220,13 +221,57 @@
                     return;
                 }
 
+                // Guest House: [Room, Guest, Designation, From, To]
                 if (currentSection === 'guesthouse' && cols[0]) {
                     guesthouseRows.push([cols[0], cols[1], cols[2], cleanVal(cols[3]), cleanVal(cols[4])]);
                 }
+                // Exams: [Subject, Section, Venue, Date From, Date To, Start Time, End Time]
                 if (currentSection === 'exams' && cols[0]) {
-                    examRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5])]);
+                    examRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5]), cleanVal(cols[6])]);
                 }
+                // Meetings: [Meeting Name, Section, Venue, Date, Start Time, End Time]
                 if (currentSection === 'meetings' && cols[0]) {
-                    meetingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4])]);
+                    meetingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5])]);
                 }
-                if (currentSection === 'trainings
+                // Trainings: [Program Name, Section, Venue, Start Date, End Date, Start Time, End Time]
+                if (currentSection === 'trainings' && cols[0]) {
+                    trainingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5]), cleanVal(cols[6])]);
+                }
+            });
+
+            renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows);
+            renderTable('exams-container', ['Exam / Subject', 'Section', 'Venue', 'Date From', 'Date To', 'Start Time', 'End Time'], examRows);
+            renderTable('meetings-container', ['Meeting Name', 'Section', 'Venue', 'Date', 'Start Time', 'End Time'], meetingRows);
+            renderTable('trainings-container', ['Program Name', 'Section', 'Venue', 'Start Date', 'End Date', 'Start Time', 'End Time'], trainingRows);
+        }
+
+        function renderTable(containerId, headers, rows) {
+            const container = document.getElementById(containerId);
+            const validRows = rows.filter(row => row.some(cell => cell && cell !== '-' && cell !== ''));
+
+            if (!validRows || validRows.length === 0) {
+                container.innerHTML = `<div class="empty-msg">No active entries currently.</div>`;
+                return;
+            }
+
+            let html = `<table><thead><tr>`;
+            headers.forEach(h => html += `<th>${h}</th>`);
+            html += `</tr></thead><tbody>`;
+
+            validRows.forEach(row => {
+                html += `<tr>`;
+                row.forEach(cell => {
+                    html += `<td>${cell || '-'}</td>`;
+                });
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        fetchDashboardData();
+        setInterval(fetchDashboardData, 300000);
+    </script>
+</body>
+</html>
