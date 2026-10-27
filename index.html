@@ -174,7 +174,8 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN5svfekbhXD-4RIbXpYHhAJr-0KBBZ8U81dyrcq4gLPN70iUQW_MzDGo8Ww0vidLgihQSeenxMghe/pub?output=csv&gid=91440551&single=true";
+        // Updated with your active spreadsheet ID and MasterFeed gid=91440551
+        const csvUrl = "https://docs.google.com/spreadsheets/d/1AOUTCpbfal9HYFDtClwAAQqWEA1R-vE0SenWH-8/export?format=csv&gid=91440551";
 
         async function fetchDashboardData() {
             try {
@@ -184,13 +185,12 @@
                 parseCSVAndRender(data);
             } catch (error) {
                 console.error("Error fetching sheet data:", error);
-                document.getElementById('guesthouse-container').innerHTML = `<div class="empty-msg">Failed to load data. Check connection.</div>`;
+                document.getElementById('guesthouse-container').innerHTML = `<div class="empty-msg">Failed to load data. Check sharing permissions.</div>`;
             }
         }
 
         function cleanVal(val) {
             if (!val || val === '' || val === '-' || val.includes('1899') || val.includes('NaN')) return '-';
-            // Clean up ISO dates if they appear as full timestamps
             if (val.includes('00:00:00')) {
                 return val.split(' ')[0];
             }
@@ -213,7 +213,6 @@
                 
                 const textJoined = cols.join(' ').toUpperCase();
                 
-                if (textJoined.includes('UNTITLED SPREADSHEET')) return;
                 if (textJoined.includes('EXAMS SCHEDULED')) { currentSection = 'exams'; return; }
                 if (textJoined.includes('MEETINGS & REVIEWS')) { currentSection = 'meetings'; return; }
                 if (textJoined.includes('TRAINING PROGRAMS')) { currentSection = 'trainings'; return; }
@@ -223,7 +222,6 @@
                     return;
                 }
 
-                // Filter valid data rows based on section
                 if (currentSection === 'guesthouse' && cols[0]) {
                     guesthouseRows.push([cols[0], cols[1], cols[2], cleanVal(cols[3]), cleanVal(cols[4])]);
                 }
@@ -238,7 +236,6 @@
                 }
             });
 
-            // Render tables with exact headers matching your columns
             renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows);
             renderTable('exams-container', ['Exam / Subject', 'Section', 'Date From', 'Date To', 'Start Time', 'End Time'], examRows);
             renderTable('meetings-container', ['Meeting Name', 'Section', 'Date', 'Start Time', 'End Time'], meetingRows);
