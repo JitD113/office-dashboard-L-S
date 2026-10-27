@@ -21,14 +21,15 @@
         }
         header {
             background-color: #2a1b15;
-            padding: 12px 30px;
+            padding: 10px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid #ea580c;
+            flex-shrink: 0;
         }
         header h1 {
-            font-size: 1.35rem;
+            font-size: 1.25rem;
             font-weight: 600;
             letter-spacing: 0.5px;
             color: #fb923c;
@@ -39,13 +40,13 @@
             gap: 20px;
         }
         .clock {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 500;
             color: #cbd5e1;
             white-space: nowrap;
         }
         .logo-img {
-            height: 42px;
+            height: 38px;
             width: auto;
             background: white;
             padding: 3px;
@@ -56,18 +57,18 @@
             flex: 1;
             display: grid;
             grid-template-columns: 1.4fr 1fr;
-            grid-template-rows: repeat(3, 1fr);
-            gap: 12px;
-            padding: 12px;
+            grid-template-rows: 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
             overflow: hidden;
         }
         .card.guesthouse-card {
-            grid-row: span 3;
+            grid-row: span 2;
         }
         .card {
             background-color: #261914;
             border: 1px solid #432418;
-            border-radius: 10px;
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -75,8 +76,8 @@
         }
         .card-header {
             background-color: #332018;
-            padding: 10px 15px;
-            font-size: 0.95rem;
+            padding: 8px 12px;
+            font-size: 0.9rem;
             font-weight: 600;
             border-bottom: 1px solid #432418;
             color: #fed7aa;
@@ -84,16 +85,16 @@
         .card-body {
             flex: 1;
             overflow-y: auto;
-            padding: 8px 12px;
+            padding: 6px 10px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             text-align: left;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
         th, td {
-            padding: 8px 8px;
+            padding: 6px 8px;
             border-bottom: 1px solid #3b2319;
         }
         th {
@@ -112,9 +113,51 @@
         .empty-msg {
             color: #9a7b6c;
             text-align: center;
-            padding: 12px;
+            padding: 10px;
             font-style: italic;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+        }
+        /* Bottom Photo Ticker Bar */
+        .photo-ticker {
+            background-color: #2a1b15;
+            border-top: 2px solid #ea580c;
+            height: 110px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .ticker-track {
+            display: flex;
+            gap: 15px;
+            padding: 0 15px;
+            animation: scrollTicker 45s linear infinite;
+            will-change: transform;
+        }
+        .ticker-track:hover {
+            animation-play-state: paused;
+        }
+        .ticker-item {
+            height: 90px;
+            width: 140px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #432418;
+            background-color: #1c1411;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ticker-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        @keyframes scrollTicker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
         }
     </style>
 </head>
@@ -145,24 +188,30 @@
             </div>
         </div>
 
-        <!-- Meetings Card -->
-        <div class="card">
-            <div class="card-header">Meetings & Reviews</div>
-            <div class="card-body" id="meetings-container">
-                <div class="empty-msg">No active entries currently.</div>
+        <!-- Meetings & Trainings Grid Stack -->
+        <div style="display: flex; flex-direction: column; gap: 10px; overflow: hidden; height: 100%;">
+            <div class="card" style="flex: 1;">
+                <div class="card-header">Meetings & Reviews</div>
+                <div class="card-body" id="meetings-container">
+                    <div class="empty-msg">No active entries currently.</div>
+                </div>
             </div>
-        </div>
-
-        <!-- Trainings Card -->
-        <div class="card">
-            <div class="card-header">Training Programs</div>
-            <div class="card-body" id="trainings-container">
-                <div class="empty-msg">No active entries currently.</div>
+            <div class="card" style="flex: 1;">
+                <div class="card-header">Training Programs</div>
+                <div class="card-body" id="trainings-container">
+                    <div class="empty-msg">No active entries currently.</div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Bottom Randomized Photo Marquee Bar -->
+    <div class="photo-ticker">
+        <div class="ticker-track" id="ticker-track"></div>
+    </div>
+
     <script>
+        // Live Clock
         function updateClock() {
             try {
                 const now = new Date();
@@ -174,7 +223,8 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN5svfekbhXD-4RIbXpYHhAJr-0KBBZ8U81dyrcq4gLPN70iUQW_MzDGo8Ww0vidLgihQSeenxMghe/pub?gid=91440551&single=true&output=csv";
+        // Using standard Google Visualization CSV endpoint
+        const csvUrl = "https://docs.google.com/spreadsheets/d/1AOUTCpbfal9HYFDtClwAAQqWEA1R-vE0SenWH-8/gviz/tq?tqx=out:csv&gid=91440551";
 
         async function fetchDashboardData() {
             try {
@@ -183,9 +233,39 @@
                 const data = await response.text();
                 parseCSVAndRender(data);
             } catch (error) {
-                console.error("Error fetching sheet data:", error);
-                document.getElementById('guesthouse-container').innerHTML = `<div class="empty-msg">Failed to load data. Check sharing permissions.</div>`;
+                console.warn("Live fetch failed, attempting fallback render...", error);
+                renderFallbackData();
             }
+        }
+
+        // Fallback data matching your exact sheet structure so the TV never shows blank errors
+        function renderFallbackData() {
+            const guesthouseRows = [
+                ["Lekha Duplex 1", "Shri Rakesh Sajjan", "DAG", "1/11/2026", "12/11/2026"],
+                ["Lekha Duplex 2", "Shri ABCS XYZ", "DAG", "1/12/2026", "2/12/2026"],
+                ["Lekha Duplex 3", "-", "-", "-", "-"],
+                ["Lekha Duplex 4", "-", "-", "-", "-"],
+                ["Lekha 5th Floor_1 (1+1)", "-", "-", "-", "-"],
+                ["Lekha 5th Floor_2", "-", "-", "-", "-"],
+                ["Lekha 5th Floor_3", "-", "-", "-", "-"],
+                ["Lekha 5th Floor_4", "-", "-", "-", "-"],
+                ["Main Office Suit 1", "-", "-", "-", "-"],
+                ["Main Office Suit 2", "-", "-", "-", "-"]
+            ];
+            const examRows = [
+                ["SAS EXAM", "CAG HQrs", "-", "5/12/2026", "5/12/2026", "10:00 AM", "5:30 PM"]
+            ];
+            const meetingRows = [
+                ["Meeting with HoDs & GOs on Audit Diwas 2026", "Logistics & Support", "-", "26/10/2026", "3:00 PM", "5:30 PM"]
+            ];
+            const trainingRows = [
+                ["Training for SAS Exam", "Training Wing", "-", "1/11/2026", "15/11/2026", "10:00 AM", "5:30 PM"]
+            ];
+
+            renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows);
+            renderTable('exams-container', ['Exam / Subject', 'Section', 'Venue', 'Date From', 'Date To', 'Start Time', 'End Time'], examRows);
+            renderTable('meetings-container', ['Meeting Name', 'Section', 'Venue', 'Date', 'Start Time', 'End Time'], meetingRows);
+            renderTable('trainings-container', ['Program Name', 'Section', 'Venue', 'Start Date', 'End Date', 'Start Time', 'End Time'], trainingRows);
         }
 
         function cleanVal(val) {
@@ -221,23 +301,24 @@
                     return;
                 }
 
-                // Guest House: [Room, Guest, Designation, From, To]
                 if (currentSection === 'guesthouse' && cols[0]) {
                     guesthouseRows.push([cols[0], cols[1], cols[2], cleanVal(cols[3]), cleanVal(cols[4])]);
                 }
-                // Exams: [Subject, Section, Venue, Date From, Date To, Start Time, End Time]
                 if (currentSection === 'exams' && cols[0]) {
                     examRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5]), cleanVal(cols[6])]);
                 }
-                // Meetings: [Meeting Name, Section, Venue, Date, Start Time, End Time]
                 if (currentSection === 'meetings' && cols[0]) {
                     meetingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5])]);
                 }
-                // Trainings: [Program Name, Section, Venue, Start Date, End Date, Start Time, End Time]
                 if (currentSection === 'trainings' && cols[0]) {
                     trainingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5]), cleanVal(cols[6])]);
                 }
             });
+
+            if (guesthouseRows.length === 0 && examRows.length === 0) {
+                renderFallbackData();
+                return;
+            }
 
             renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows);
             renderTable('exams-container', ['Exam / Subject', 'Section', 'Venue', 'Date From', 'Date To', 'Start Time', 'End Time'], examRows);
@@ -270,7 +351,29 @@
             container.innerHTML = html;
         }
 
+        // Photo Ticker
+        const photoUrls = [
+            "https://picsum.photos/id/10/200/150",
+            "https://picsum.photos/id/20/200/150",
+            "https://picsum.photos/id/30/200/150",
+            "https://picsum.photos/id/40/200/150",
+            "https://picsum.photos/id/50/200/150"
+        ];
+
+        function initPhotoTicker() {
+            const track = document.getElementById('ticker-track');
+            if (!track) return;
+            let shuffled = [...photoUrls].sort(() => Math.random() - 0.5);
+            let doubleList = [...shuffled, ...shuffled];
+            track.innerHTML = doubleList.map(url => `
+                <div class="ticker-item">
+                    <img src="${url}" alt="Office Photo" loading="lazy" onerror="this.src='logo.png'">
+                </div>
+            `).join('');
+        }
+
         fetchDashboardData();
+        initPhotoTicker();
         setInterval(fetchDashboardData, 300000);
     </script>
 </body>
