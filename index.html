@@ -184,4 +184,94 @@
                 parseCSVAndRender(data);
             } catch (error) {
                 console.error("Error fetching sheet data:", error);
-                document.getElementById('guesthouse-container').innerHTML = `<div
+                document.getElementById('guesthouse-container').innerHTML = `<div class="empty-msg">Failed to load data. Check connection.</div>`;
+            }
+        }
+
+        function cleanVal(val) {
+            if (!val || val === '' || val === '-' || val.includes('1899') || val.includes('NaN')) return '-';
+            // Clean up ISO dates if they appear as full timestamps
+            if (val.includes('00:00:00')) {
+                return val.split(' ')[0];
+            }
+            return val;
+        }
+
+        function parseCSVAndRender(csvText) {
+            const lines = csvText.split('\n').map(line => {
+                return line.split(',').map(val => val.replace(/^"|"$/g, '').trim());
+            });
+
+            let guesthouseRows = [];
+            let examRows = [];
+            let meetingRows = [];
+            let trainingRows = [];
+            let currentSection = 'guesthouse';
+
+            lines.forEach(cols => {
+                if (!cols || cols.length === 0 || cols.every(c => c === '')) return;
+                
+                const textJoined = cols.join(' ').toUpperCase();
+                
+                if (textJoined.includes('UNTITLED SPREADSHEET')) return;
+                if (textJoined.includes('EXAMS SCHEDULED')) { currentSection = 'exams'; return; }
+                if (textJoined.includes('MEETINGS & REVIEWS')) { currentSection = 'meetings'; return; }
+                if (textJoined.includes('TRAINING PROGRAMS')) { currentSection = 'trainings'; return; }
+                if (textJoined.includes('GUEST HOUSE BOOKINGS')) { currentSection = 'guesthouse'; return; }
+
+                if (textJoined.includes('---') || textJoined.includes('ROOM NUMBER') || textJoined.includes('EXAM / SUBJECT') || textJoined.includes('MEETING NAME') || textJoined.includes('TRAINING PROGRAM')) {
+                    return;
+                }
+
+                // Filter valid data rows based on section
+                if (currentSection === 'guesthouse' && cols[0]) {
+                    guesthouseRows.push([cols[0], cols[1], cols[2], cleanVal(cols[3]), cleanVal(cols[4])]);
+                }
+                if (currentSection === 'exams' && cols[0]) {
+                    examRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5])]);
+                }
+                if (currentSection === 'meetings' && cols[0]) {
+                    meetingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4])]);
+                }
+                if (currentSection === 'trainings' && cols[0]) {
+                    trainingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5])]);
+                }
+            });
+
+            // Render tables with exact headers matching your columns
+            renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows);
+            renderTable('exams-container', ['Exam / Subject', 'Section', 'Date From', 'Date To', 'Start Time', 'End Time'], examRows);
+            renderTable('meetings-container', ['Meeting Name', 'Section', 'Date', 'Start Time', 'End Time'], meetingRows);
+            renderTable('trainings-container', ['Program Name', 'Section', 'Start Date', 'End Date', 'Start Time', 'End Time'], trainingRows);
+        }
+
+        function renderTable(containerId, headers, rows) {
+            const container = document.getElementById(containerId);
+            const validRows = rows.filter(row => row.some(cell => cell && cell !== '-' && cell !== ''));
+
+            if (!validRows || validRows.length === 0) {
+                container.innerHTML = `<div class="empty-msg">No active entries currently.</div>`;
+                return;
+            }
+
+            let html = `<table><thead><tr>`;
+            headers.forEach(h => html += `<th>${h}</th>`);
+            html += `</tr></thead><tbody>`;
+
+            validRows.forEach(row => {
+                html += `<tr>`;
+                row.forEach(cell => {
+                    html += `<td>${cell || '-'}</td>`;
+                });
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        fetchDashboardData();
+        setInterval(fetchDashboardData, 300000);
+    </script>
+</body>
+</html>
