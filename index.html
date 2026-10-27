@@ -300,17 +300,21 @@
                     return;
                 }
 
+                // Guest House: Room (0), Guest (1), Designation (2), From (3), To (4)
                 if (currentSection === 'guesthouse' && cols[0]) {
                     guesthouseRows.push([cols[0], cols[1], cols[2], cleanVal(cols[3]), cleanVal(cols[4])]);
                 }
+                // Exams: Subject (0), Section (1), Venue (2), Date From (3), Date To (4), Start Time (5), End Time (6)
                 if (currentSection === 'exams' && cols[0]) {
                     examRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5]), cleanVal(cols[6])]);
                 }
+                // Meetings: Name (0), Section (1), Venue (2), Date (3), Start Time (5), End Time (6) -> Note Col 4 is blank space in sheet
                 if (currentSection === 'meetings' && cols[0]) {
-                    meetingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5])]);
+                    meetingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[5]), cleanVal(cols[6])]);
                 }
+                // Trainings: Program (0), Section (1), Venue (2), Start Date (3), End Date (4), Start Time (6), End Time (7)
                 if (currentSection === 'trainings' && cols[0]) {
-                    trainingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5]), cleanVal(cols[6])]);
+                    trainingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[6]), cleanVal(cols[7])]);
                 }
             });
 
