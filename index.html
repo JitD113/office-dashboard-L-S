@@ -77,7 +77,8 @@
         .card-header {
             background-color: #332018;
             padding: 8px 12px;
-            font-size: 0.9rem;
+            /* ENLARGED HEADER FONT */
+            font-size: 1.1rem;
             font-weight: 600;
             border-bottom: 1px solid #432418;
             color: #fed7aa;
@@ -86,12 +87,19 @@
             flex: 1;
             overflow-y: auto;
             padding: 6px 10px;
+            /* Hides scrollbar for clean TV display */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .card-body::-webkit-scrollbar {
+            display: none;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             text-align: left;
-            font-size: 0.8rem;
+            /* ENLARGED TABLE FONT */
+            font-size: 0.95rem;
         }
         th, td {
             padding: 6px 8px;
@@ -100,9 +108,10 @@
         th {
             color: #fdba74;
             font-weight: 600;
-            background-color: rgba(51, 32, 24, 0.9);
+            background-color: rgba(51, 32, 24, 0.95);
             position: sticky;
             top: 0;
+            z-index: 10;
         }
         td {
             color: #f1f5f9;
@@ -115,13 +124,14 @@
             text-align: center;
             padding: 10px;
             font-style: italic;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
         }
         /* Bottom Photo Ticker Bar */
         .photo-ticker {
             background-color: #2a1b15;
             border-top: 2px solid #ea580c;
-            height: 110px;
+            /* ENLARGED TICKER BAR HEIGHT */
+            height: 140px;
             display: flex;
             align-items: center;
             overflow: hidden;
@@ -132,15 +142,14 @@
             display: flex;
             gap: 15px;
             padding: 0 15px;
-            animation: scrollTicker 180s linear infinite;
+            /* SLOWED DOWN ANIMATION (90s) */
+            animation: scrollTicker 90s linear infinite;
             will-change: transform;
         }
-        .ticker-track:hover {
-            animation-play-state: paused;
-        }
         .ticker-item {
-            height: 90px;
-            width: 140px;
+            /* ENLARGED PHOTO DIMENSIONS */
+            height: 110px;
+            width: 170px;
             border-radius: 6px;
             overflow: hidden;
             border: 1px solid #432418;
@@ -172,7 +181,6 @@
     </header>
 
     <div class="main-grid">
-        <!-- Guest House Card -->
         <div class="card guesthouse-card">
             <div class="card-header">Guest House Bookings (10 Rooms)</div>
             <div class="card-body" id="guesthouse-container">
@@ -180,7 +188,6 @@
             </div>
         </div>
 
-        <!-- Exams Card -->
         <div class="card">
             <div class="card-header">Exams Scheduled</div>
             <div class="card-body" id="exams-container">
@@ -188,7 +195,6 @@
             </div>
         </div>
 
-        <!-- Meetings & Trainings Grid Stack -->
         <div style="display: flex; flex-direction: column; gap: 10px; overflow: hidden; height: 100%;">
             <div class="card" style="flex: 1;">
                 <div class="card-header">Meetings & Reviews</div>
@@ -205,7 +211,6 @@
         </div>
     </div>
 
-    <!-- Bottom Randomized Photo Marquee Bar -->
     <div class="photo-ticker">
         <div class="ticker-track" id="ticker-track"></div>
     </div>
@@ -223,8 +228,9 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Google Sheet CSV Endpoint
         const csvUrl = "https://docs.google.com/spreadsheets/d/1AOUTCpbfal9HYFDtClwAAQqWEA1R-vE0SenWH-8/gviz/tq?tqx=out:csv&gid=91440551";
+
+        let scrollIntervals = []; // Array to manage airport ticker animations
 
         async function fetchDashboardData() {
             try {
@@ -233,49 +239,21 @@
                 const data = await response.text();
                 parseCSVAndRender(data);
             } catch (error) {
-                console.warn("Live fetch failed, attempting fallback render...", error);
-                renderFallbackData();
+                console.warn("Live fetch failed.", error);
             }
-        }
-
-        function renderFallbackData() {
-            const guesthouseRows = [
-                ["Lekha Duplex 1", "Shri Rakesh Sajjan", "DAG", "1/11/2026", "12/11/2026"],
-                ["Lekha Duplex 2", "Shri ABCS XYZ", "DAG", "1/12/2026", "2/12/2026"],
-                ["Lekha Duplex 3", "-", "-", "-", "-"],
-                ["Lekha Duplex 4", "-", "-", "-", "-"],
-                ["Lekha 5th Floor_1 (1+1)", "-", "-", "-", "-"],
-                ["Lekha 5th Floor_2", "-", "-", "-", "-"],
-                ["Lekha 5th Floor_3", "-", "-", "-", "-"],
-                ["Lekha 5th Floor_4", "-", "-", "-", "-"],
-                ["Main Office Suit 1", "-", "-", "-", "-"],
-                ["Main Office Suit 2", "-", "-", "-", "-"]
-            ];
-            const examRows = [
-                ["SAS EXAM", "CAG HQrs", "-", "5/12/2026", "5/12/2026", "10:00 AM", "5:30 PM"]
-            ];
-            const meetingRows = [
-                ["Meeting with HoDs & GOs on Audit Diwas 2026", "Logistics & Support", "-", "26/10/2026", "3:00 PM", "5:30 PM"]
-            ];
-            const trainingRows = [
-                ["Training for SAS Exam", "Training Wing", "-", "1/11/2026", "15/11/2026", "10:00 AM", "5:30 PM"]
-            ];
-
-            renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows);
-            renderTable('exams-container', ['Exam / Subject', 'Section', 'Venue', 'Date From', 'Date To', 'Start Time', 'End Time'], examRows);
-            renderTable('meetings-container', ['Meeting Name', 'Section', 'Venue', 'Date', 'Start Time', 'End Time'], meetingRows);
-            renderTable('trainings-container', ['Program Name', 'Section', 'Venue', 'Start Date', 'End Date', 'Start Time', 'End Time'], trainingRows);
         }
 
         function cleanVal(val) {
             if (!val || val === '' || val === '-' || val.includes('1899') || val.includes('NaN')) return '-';
-            if (val.includes('00:00:00')) {
-                return val.split(' ')[0];
-            }
+            if (val.includes('00:00:00')) return val.split(' ')[0];
             return val;
         }
 
         function parseCSVAndRender(csvText) {
+            // Clear old animations before re-rendering
+            scrollIntervals.forEach(clearInterval);
+            scrollIntervals = [];
+
             const lines = csvText.split('\n').map(line => {
                 return line.split(',').map(val => val.replace(/^"|"$/g, '').trim());
             });
@@ -300,28 +278,19 @@
                     return;
                 }
 
-                // Guest House: Room (0), Guest (1), Designation (2), From (3), To (4)
                 if (currentSection === 'guesthouse' && cols[0]) {
                     guesthouseRows.push([cols[0], cols[1], cols[2], cleanVal(cols[3]), cleanVal(cols[4])]);
                 }
-                // Exams: Subject (0), Section (1), Venue (2), Date From (3), Date To (4), Start Time (5), End Time (6)
                 if (currentSection === 'exams' && cols[0]) {
                     examRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5]), cleanVal(cols[6])]);
                 }
-                // Meetings: Name (0), Section (1), Venue (2), Date (3), Start Time (5), End Time (6) -> Note Col 4 is blank space in sheet
                 if (currentSection === 'meetings' && cols[0]) {
                     meetingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[5]), cleanVal(cols[6])]);
                 }
-                // Trainings: Program (0), Section (1), Venue (2), Start Date (3), End Date (4), Start Time (6), End Time (7)
                 if (currentSection === 'trainings' && cols[0]) {
                     trainingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[6]), cleanVal(cols[7])]);
                 }
             });
-
-            if (guesthouseRows.length === 0 && examRows.length === 0) {
-                renderFallbackData();
-                return;
-            }
 
             renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows);
             renderTable('exams-container', ['Exam / Subject', 'Section', 'Venue', 'Date From', 'Date To', 'Start Time', 'End Time'], examRows);
@@ -338,11 +307,15 @@
                 return;
             }
 
+            // If there are many rows, duplicate them so the airport scroll loops seamlessly
+            const needsScroll = validRows.length > 5;
+            const displayRows = needsScroll ? [...validRows, ...validRows] : validRows;
+
             let html = `<table><thead><tr>`;
             headers.forEach(h => html += `<th>${h}</th>`);
             html += `</tr></thead><tbody>`;
 
-            validRows.forEach(row => {
+            displayRows.forEach(row => {
                 html += `<tr>`;
                 row.forEach(cell => {
                     html += `<td>${cell || '-'}</td>`;
@@ -352,28 +325,44 @@
 
             html += `</tbody></table>`;
             container.innerHTML = html;
+
+            if (needsScroll) {
+                startAutoScroll(container);
+            }
         }
 
-        // --- Dynamic Google Drive Photo Ticker ---
+        // Airport Ticker Auto-Scroll Logic
+        function startAutoScroll(container) {
+            let scrollTop = 0;
+            const interval = setInterval(() => {
+                if (container.scrollHeight > container.clientHeight) {
+                    scrollTop += 0.5; // Controls the scroll speed
+                    container.scrollTop = scrollTop;
+                    
+                    // When reaching the bottom of the duplicated list, reset to top
+                    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 1) {
+                        scrollTop = 0;
+                        container.scrollTop = 0;
+                    }
+                }
+            }, 30);
+            scrollIntervals.push(interval);
+        }
+
+        // Dynamic Google Drive Photo Ticker
         async function initPhotoTicker() {
             const track = document.getElementById('ticker-track');
             if (!track) return;
 
             try {
-                // TODO: Replace with your deployed Apps Script Web App URL
                 const webAppUrl = "https://script.google.com/macros/s/AKfycbzXUs9luJNmNT5pFW00NAqeRGCdoH4x0HtbRK6H07ZaAbMfAbbE1tXlKfujGigi158TNA/exec";
-                
                 const response = await fetch(webAppUrl);
                 let photoUrls = await response.json();
 
                 if (!photoUrls || photoUrls.length === 0) {
-                    photoUrls = [
-                        "https://picsum.photos/id/10/200/150",
-                        "https://picsum.photos/id/20/200/150"
-                    ];
+                    photoUrls = [ "https://picsum.photos/id/10/200/150" ];
                 }
 
-                // Shuffle array randomly
                 let shuffled = [...photoUrls].sort(() => Math.random() - 0.5);
                 let doubleList = [...shuffled, ...shuffled];
 
@@ -383,22 +372,13 @@
                     </div>
                 `).join('');
             } catch (error) {
-                console.error("Error loading drive photos, using placeholders:", error);
-                const placeholders = [
-                    "https://picsum.photos/id/10/200/150",
-                    "https://picsum.photos/id/20/200/150",
-                    "https://picsum.photos/id/30/200/150"
-                ];
-                track.innerHTML = [...placeholders, ...placeholders].map(url => `
-                    <div class="ticker-item"><img src="${url}" alt="Placeholder"></div>
-                `).join('');
+                console.error("Error loading drive photos", error);
             }
         }
 
         fetchDashboardData();
         initPhotoTicker();
         
-        // Auto-refresh data and ticker every 1 minute (60000 ms)
         setInterval(fetchDashboardData, 60000);
     </script>
 </body>
