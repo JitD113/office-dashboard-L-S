@@ -143,13 +143,13 @@
             gap: 15px;
             padding: 0 15px;
             /* SLOWED DOWN ANIMATION (90s) */
-            animation: scrollTicker 90s linear infinite;
+            animation: scrollTicker 450s linear infinite;
             will-change: transform;
         }
         .ticker-item {
             /* ENLARGED PHOTO DIMENSIONS */
-            height: 110px;
-            width: 170px;
+            height: 200px;
+            width: 300px;
             border-radius: 6px;
             overflow: hidden;
             border: 1px solid #432418;
@@ -379,7 +379,7 @@
         fetchDashboardData();
         initPhotoTicker();
         
-        setInterval(fetchDashboardData, 6000000);
+        setInterval(fetchDashboardData, 60000);
     </script>
 </body>
 </html>
