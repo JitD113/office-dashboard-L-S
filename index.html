@@ -1,3 +1,4 @@
+HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -205,4 +206,221 @@
         <div style="display: flex; flex-direction: column; gap: 10px; overflow: hidden; height: 100%;">
             
             <div class="card" style="flex: 2;">
-                <div class="card-header">Meetings
+                <div class="card-header">Meetings & Reviews</div>
+                <div class="card-body" id="meetings-container">
+                    <div class="empty-msg">No active entries currently.</div>
+                </div>
+            </div>
+
+            <div class="card" style="flex: 2;">
+                <div class="card-header">Training Programs</div>
+                <div class="card-body" id="trainings-container">
+                    <div class="empty-msg">No active entries currently.</div>
+                </div>
+            </div>
+
+            <!-- Exams box moved to the bottom and made smaller -->
+            <div class="card" style="flex: 1;">
+                <div class="card-header" style="padding: 5px 12px; font-size: 1rem;">Exams Scheduled</div>
+                <div class="card-body" id="exams-container">
+                    <div class="empty-msg">No active entries currently.</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="photo-ticker">
+        <div class="ticker-track" id="ticker-track"></div>
+    </div>
+
+    <script>
+        // Live Clock
+        function updateClock() {
+            try {
+                const now = new Date();
+                document.getElementById('live-clock').innerText = now.toLocaleDateString('en-IN', {
+                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+                }) + ' | ' + now.toLocaleTimeString();
+            } catch (e) {}
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // YOUR LIVE PUBLISHED CSV LINK
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN5svfekbhXD-4RIbXpYHhAJr-0KBBZ8U81dyrcq4gLPN70iUQW_MzDGo8Ww0vidLgihQSeenxMghe/pub?gid=91440551&single=true&output=csv";
+
+        let scrollIntervals = [];
+
+        async function fetchDashboardData() {
+            try {
+                const response = await fetch(csvUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.text();
+                parseCSVAndRender(data);
+            } catch (error) {
+                console.warn("Live fetch failed.", error);
+            }
+        }
+
+        function cleanVal(val) {
+            if (!val || val === '' || val === '-' || val.includes('1899') || val.includes('NaN')) return '-';
+            if (val.includes('00:00:00')) return val.split(' ')[0];
+            return val;
+        }
+
+        function parseCSVAndRender(csvText) {
+            scrollIntervals.forEach(clearInterval);
+            scrollIntervals = [];
+
+            const lines = csvText.split('\n').map(line => {
+                return line.split(',').map(val => val.replace(/^"|"$/g, '').trim());
+            });
+
+            let guesthouseRows = [];
+            let examRows = [];
+            let meetingRows = [];
+            let trainingRows = [];
+            let currentSection = 'guesthouse';
+
+            lines.forEach(cols => {
+                if (!cols || cols.length === 0 || cols.every(c => c === '')) return;
+                
+                const textJoined = cols.join(' ').toUpperCase();
+                
+                if (textJoined.includes('EXAMS SCHEDULED')) { currentSection = 'exams'; return; }
+                if (textJoined.includes('MEETINGS & REVIEWS')) { currentSection = 'meetings'; return; }
+                if (textJoined.includes('TRAINING PROGRAMS')) { currentSection = 'trainings'; return; }
+                if (textJoined.includes('GUEST HOUSE BOOKINGS')) { currentSection = 'guesthouse'; return; }
+
+                if (textJoined.includes('---') || textJoined.includes('ROOM NUMBER') || textJoined.includes('EXAM / SUBJECT') || textJoined.includes('MEETING NAME') || textJoined.includes('TRAINING PROGRAM')) {
+                    return;
+                }
+
+                if (currentSection === 'guesthouse' && cols[0]) {
+                    guesthouseRows.push([cols[0], cols[1], cols[2], cleanVal(cols[3]), cleanVal(cols[4])]);
+                }
+                if (currentSection === 'exams' && cols[0]) {
+                    examRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[5]), cleanVal(cols[6])]);
+                }
+                if (currentSection === 'meetings' && cols[0]) {
+                    meetingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[5]), cleanVal(cols[6])]);
+                }
+                if (currentSection === 'trainings' && cols[0]) {
+                    trainingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanVal(cols[3]), cleanVal(cols[4]), cleanVal(cols[6]), cleanVal(cols[7])]);
+                }
+            });
+
+            renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows, 12);
+            renderTable('exams-container', ['Exam / Subject', 'Section', 'Venue', 'Date From', 'Date To', 'Start Time', 'End Time'], examRows, 4);
+            renderTable('meetings-container', ['Meeting Name', 'Section', 'Venue', 'Date', 'Start Time', 'End Time'], meetingRows, 4);
+            renderTable('trainings-container', ['Program Name', 'Section', 'Venue', 'Start Date', 'End Date', 'Start Time', 'End Time'], trainingRows, 4);
+        }
+
+        function renderTable(containerId, headers, rows, scrollThreshold = 5) {
+            const container = document.getElementById(containerId);
+            const validRows = rows.filter(row => row.some(cell => cell && cell !== '-' && cell !== ''));
+
+            if (!validRows || validRows.length === 0) {
+                container.innerHTML = `<div class="empty-msg">No active entries currently.</div>`;
+                return;
+            }
+
+            const needsScroll = validRows.length > scrollThreshold;
+
+            let html = `<table><thead><tr>`;
+            headers.forEach(h => html += `<th>${h}</th>`);
+            html += `</tr></thead><tbody>`;
+
+            validRows.forEach(row => {
+                html += `<tr>`;
+                row.forEach(cell => {
+                    html += `<td>${cell || '-'}</td>`;
+                });
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+
+            if (needsScroll) {
+                startAutoScroll(container);
+            }
+        }
+
+        // Airport "Roll Over" Auto-Scroll Logic
+        function startAutoScroll(container) {
+            const tbody = container.querySelector('tbody');
+            if (!tbody) return;
+
+            const interval = setInterval(() => {
+                const firstRow = tbody.querySelector('tr');
+                if (firstRow) {
+                    firstRow.classList.add('row-roll-up');
+                    
+                    setTimeout(() => {
+                        firstRow.classList.remove('row-roll-up');
+                        tbody.appendChild(firstRow);
+                    }, 600); 
+                }
+            }, 3500); 
+            
+            scrollIntervals.push(interval);
+        }
+
+        // Dynamic Google Drive Photo Ticker
+        async function initPhotoTicker() {
+            const track = document.getElementById('ticker-track');
+            if (!track) return;
+
+            try {
+                const webAppUrl = "https://script.google.com/macros/s/AKfycbzXUs9luJNmNT5pFW00NAqeRGCdoH4x0HtbRK6H07ZaAbMfAbbE1tXlKfujGigi158TNA/exec";
+                const response = await fetch(webAppUrl);
+                let photoUrls = await response.json();
+
+                if (!photoUrls || photoUrls.length === 0) {
+                    photoUrls = [ "https://picsum.photos/id/10/200/150" ];
+                }
+
+                let shuffled = [...photoUrls].sort(() => Math.random() - 0.5);
+                let doubleList = [...shuffled, ...shuffled];
+
+                track.innerHTML = doubleList.map(url => `
+                    <div class="ticker-item">
+                        <img src="${url}" alt="Office Photo" loading="lazy" onerror="this.src='logo.png'">
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error("Error loading drive photos", error);
+            }
+        }
+
+        fetchDashboardData();
+        initPhotoTicker();
+        
+        setInterval(fetchDashboardData, 60000);
+
+        // Force Fullscreen on the first remote click
+        document.body.addEventListener('click', () => {
+            let elem = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                }
+            }
+        });
+
+        // Hide the TV remote cursor after 3 seconds of inactivity
+        let cursorTimeout;
+        document.addEventListener('mousemove', () => {
+            document.body.style.cursor = 'default';
+            clearTimeout(cursorTimeout);
+            cursorTimeout = setTimeout(() => {
+                document.body.style.cursor = 'none';
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
