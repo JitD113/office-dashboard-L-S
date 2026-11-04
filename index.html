@@ -132,7 +132,7 @@
             background-color: rgba(234, 88, 12, 0.12);
         }
 
-        /* Column Percentages for Guest House */
+        /* Locked Column Percentages for Guest House */
         #guesthouse-container th:nth-child(1), #guesthouse-container td:nth-child(1) { width: 28%; }
         #guesthouse-container th:nth-child(2), #guesthouse-container td:nth-child(2) { width: 26%; }
         #guesthouse-container th:nth-child(3), #guesthouse-container td:nth-child(3) { width: 16%; }
@@ -241,7 +241,7 @@
     <header>
         <h1>Logistics & Support Section, O/o the PAG (Audit), Telangana</h1>
         <div class="header-right">
-            <div class="clock" id="live-clock">Loading...</div>
+            <div class="clock" id="live-clock">--:--:--</div>
             <img src="logo.png" alt="CAG Logo" class="logo-img" onerror="this.style.display='none'">
         </div>
     </header>
@@ -251,7 +251,7 @@
         <div class="card">
             <div class="card-header">Guest House Bookings (10 Rooms)</div>
             <div class="card-body" id="guesthouse-container">
-                <div class="empty-msg">Loading data...</div>
+                <div class="empty-msg">Loading Guest House entries...</div>
             </div>
         </div>
 
@@ -284,65 +284,76 @@
     </div>
 
     <script>
-        // Clock
+        // TV-Safe Bulletproof Clock (No locale dependency)
         function updateClock() {
             try {
-                const now = new Date();
-                document.getElementById('live-clock').innerText = now.toLocaleDateString('en-IN', {
-                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
-                }) + ' | ' + now.toLocaleTimeString();
-            } catch (e) {}
+                var now = new Date();
+                var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                var dayStr = days[now.getDay()];
+                var dateStr = now.getDate();
+                var monthStr = months[now.getMonth()];
+                var yearStr = now.getFullYear();
+                
+                var hrs = String(now.getHours()).padStart(2, '0');
+                var mins = String(now.getMinutes()).padStart(2, '0');
+                var secs = String(now.getSeconds()).padStart(2, '0');
+                
+                document.getElementById('live-clock').innerText = dayStr + ', ' + dateStr + ' ' + monthStr + ' ' + yearStr + ' | ' + hrs + ':' + mins + ':' + secs;
+            } catch (e) {
+                document.getElementById('live-clock').innerText = new Date().toLocaleString();
+            }
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN5svfekbhXD-4RIbXpYHhAJr-0KBBZ8U81dyrcq4gLPN70iUQW_MzDGo8Ww0vidLgihQSeenxMghe/pub?gid=91440551&single=true&output=csv";
+        var csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN5svfekbhXD-4RIbXpYHhAJr-0KBBZ8U81dyrcq4gLPN70iUQW_MzDGo8Ww0vidLgihQSeenxMghe/pub?gid=91440551&single=true&output=csv";
+        var scrollIntervals = [];
 
-        let scrollIntervals = [];
-
-        async function fetchDashboardData() {
-            try {
-                const response = await fetch(csvUrl);
-                if (!response.ok) throw new Error('Network response failed');
-                const data = await response.text();
-                parseCSVAndRender(data);
-            } catch (error) {
-                console.warn("CSV Fetch Error:", error);
-            }
+        // TV-Safe XMLHttpRequest for Google Sheets CSV
+        function fetchDashboardData() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", csvUrl + "&t=" + new Date().getTime(), true);
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 400) {
+                    parseCSVAndRender(xhr.responseText);
+                }
+            };
+            xhr.send();
         }
 
         function cleanVal(val) {
-            if (!val || val === '' || val === '-' || val.includes('1899') || val.includes('NaN')) return '-';
-            if (val.includes('00:00:00')) return val.split(' ')[0];
+            if (!val || val === '' || val === '-' || val.indexOf('1899') !== -1 || val.indexOf('NaN') !== -1) return '-';
+            if (val.indexOf('00:00:00') !== -1) return val.split(' ')[0];
             return val.trim();
         }
 
         function formatDateStandard(dateObj) {
             if (!dateObj || isNaN(dateObj.getTime())) return '-';
-            let dd = String(dateObj.getDate()).padStart(2, '0');
-            let mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-            let yyyy = dateObj.getFullYear();
-            return `${dd}/${mm}/${yyyy}`;
+            var dd = String(dateObj.getDate()).padStart(2, '0');
+            var mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            var yyyy = dateObj.getFullYear();
+            return dd + '/' + mm + '/' + yyyy;
         }
 
         function parseDate(str) {
-            if (!str || str === '-' || str === '' || str.includes('NaN')) return null;
-            let norm = str.trim();
-            const monthMap = {
+            if (!str || str === '-' || str === '' || str.indexOf('NaN') !== -1) return null;
+            var norm = str.trim();
+            var monthMap = {
                 jan:0, january:0, feb:1, february:1, mar:2, march:2, apr:3, april:3,
                 may:4, jun:5, june:5, jul:6, july:6, aug:7, august:7,
                 sep:8, september:8, oct:9, october:9, nov:10, november:10, dec:11, december:11
             };
 
-            let cleaned = norm.replace(/[\.-]/g, '/');
-            let parts = cleaned.split('/');
+            var cleaned = norm.replace(/[\.-]/g, '/');
+            var parts = cleaned.split('/');
 
             if (parts.length === 3) {
-                let p0 = parts[0].trim();
-                let p1 = parts[1].trim();
-                let p2 = parts[2].trim();
+                var p0 = parts[0].trim();
+                var p1 = parts[1].trim();
+                var p2 = parts[2].trim();
 
-                let monthIdx = monthMap[p1.toLowerCase()];
+                var monthIdx = monthMap[p1.toLowerCase()];
                 if (monthIdx !== undefined) {
                     return new Date(parseInt(p2), monthIdx, parseInt(p0));
                 }
@@ -356,18 +367,17 @@
         }
 
         function cleanAndFormatDateCell(cellVal) {
-            let parsed = parseDate(cellVal);
+            var parsed = parseDate(cellVal);
             return parsed ? formatDateStandard(parsed) : cleanVal(cellVal);
         }
 
-        // Bulletproof Character-by-Character CSV Stream Parser (Zero infinite loops)
         function CSVToArray(text) {
-            let p = '', c = '', r = [];
-            let q = false;
-            let row = [''];
-            for (let i = 0; i < text.length; i++) {
+            var p = '', c = '', r = [];
+            var q = false;
+            var row = [''];
+            for (var i = 0; i < text.length; i++) {
                 c = text[i];
-                let next = text[i+1];
+                var next = text[i+1];
                 if (c === '"') {
                     if (q && next === '"') { row[row.length - 1] += '"'; i++; }
                     else { q = !q; }
@@ -386,18 +396,18 @@
         }
 
         function sortRowsByDate(rows, startDateColIdx, endDateColIdx) {
-            let today = new Date();
+            var today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            return rows.sort((a, b) => {
-                let startA = parseDate(a[startDateColIdx]);
-                let endA = endDateColIdx !== undefined ? (parseDate(a[endDateColIdx]) || startA) : startA;
+            return rows.sort(function(a, b) {
+                var startA = parseDate(a[startDateColIdx]);
+                var endA = endDateColIdx !== undefined ? (parseDate(a[endDateColIdx]) || startA) : startA;
                 
-                let startB = parseDate(b[startDateColIdx]);
-                let endB = endDateColIdx !== undefined ? (parseDate(b[endDateColIdx]) || startB) : startB;
+                var startB = parseDate(b[startDateColIdx]);
+                var endB = endDateColIdx !== undefined ? (parseDate(b[endDateColIdx]) || startB) : startB;
 
-                let isPastA = endA ? (endA < today) : false;
-                let isPastB = endB ? (endB < today) : false;
+                var isPastA = endA ? (endA < today) : false;
+                var isPastB = endB ? (endB < today) : false;
 
                 if (isPastA !== isPastB) return isPastA ? 1 : -1;
                 if (!isPastA) {
@@ -417,19 +427,187 @@
             scrollIntervals.forEach(clearInterval);
             scrollIntervals = [];
 
-            const lines = CSVToArray(csvText);
+            var lines = CSVToArray(csvText);
 
-            let guesthouseRows = [];
-            let meetingRows = [];
-            let trainingRows = [];
-            let currentSection = 'guesthouse';
+            var guesthouseRows = [];
+            var meetingRows = [];
+            var trainingRows = [];
+            var currentSection = 'guesthouse';
 
-            lines.forEach(cols => {
-                if (!cols || cols.length === 0 || cols.every(c => c === '')) return;
+            lines.forEach(function(cols) {
+                if (!cols || cols.length === 0 || cols.every(function(c) { return c === ''; })) return;
                 
-                const textJoined = cols.join(' ').toUpperCase();
+                var textJoined = cols.join(' ').toUpperCase();
                 
-                if (textJoined.includes('MEETINGS & REVIEWS')) { currentSection = 'meetings'; return; }
-                if (textJoined.includes('TRAINING PROGRAMS')) { currentSection = 'trainings'; return; }
-                if (textJoined.includes('GUEST HOUSE BOOKINGS')) { currentSection = 'guesthouse'; return; }
-                if (textJoined.includes('EXAMS SCHEDULE
+                if (textJoined.indexOf('MEETINGS & REVIEWS') !== -1) { currentSection = 'meetings'; return; }
+                if (textJoined.indexOf('TRAINING PROGRAMS') !== -1) { currentSection = 'trainings'; return; }
+                if (textJoined.indexOf('GUEST HOUSE BOOKINGS') !== -1) { currentSection = 'guesthouse'; return; }
+                if (textJoined.indexOf('EXAMS SCHEDULED') !== -1) { currentSection = 'ignore'; return; }
+
+                if (textJoined.indexOf('---') !== -1 || textJoined.indexOf('ROOM NUMBER') !== -1 || textJoined.indexOf('MEETING NAME') !== -1 || textJoined.indexOf('TRAINING PROGRAM') !== -1) {
+                    return;
+                }
+
+                if (currentSection === 'guesthouse' && cols[0]) {
+                    guesthouseRows.push([cols[0], cols[1], cols[2], cleanAndFormatDateCell(cols[3]), cleanAndFormatDateCell(cols[4])]);
+                }
+                if (currentSection === 'meetings' && cols[0]) {
+                    meetingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanAndFormatDateCell(cols[3]), cleanVal(cols[5]), cleanVal(cols[6])]);
+                }
+                if (currentSection === 'trainings' && cols[0]) {
+                    trainingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanAndFormatDateCell(cols[3]), cleanAndFormatDateCell(cols[4]), cleanVal(cols[6]), cleanVal(cols[7])]);
+                }
+            });
+
+            guesthouseRows = sortRowsByDate(guesthouseRows, 3, 4);
+            meetingRows = sortRowsByDate(meetingRows, 3, 3);
+            trainingRows = sortRowsByDate(trainingRows, 3, 4);
+
+            renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows, 3, 4, 2);
+            renderTable('meetings-container', ['Meeting Name', 'Section', 'Venue', 'Date', 'Start', 'End'], meetingRows, 3, 3, 2);
+            renderTable('trainings-container', ['Program Name', 'Section', 'Venue', 'Start Date', 'End Date', 'Start', 'End'], trainingRows, 3, 4, 2);
+        }
+
+        function renderTable(containerId, headers, rows, startDateIdx, endDateIdx, scrollThreshold) {
+            if (scrollThreshold === undefined) scrollThreshold = 2;
+            var container = document.getElementById(containerId);
+            var validRows = rows.filter(function(row) {
+                return row.some(function(cell) { return cell && cell !== '-' && cell !== ''; });
+            });
+
+            if (!validRows || validRows.length === 0) {
+                container.innerHTML = '<div class="empty-msg">No active entries currently.</div>';
+                return;
+            }
+
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            var html = '<table><thead><tr>';
+            headers.forEach(function(h) { html += '<th>' + h + '</th>'; });
+            html += '</tr></thead><tbody>';
+
+            validRows.forEach(function(row) {
+                var startD = parseDate(row[startDateIdx]);
+                var endD = endDateIdx !== undefined ? (parseDate(row[endDateIdx]) || startD) : startD;
+                var isPast = endD ? (endD < today) : false;
+
+                html += '<tr class="' + (isPast ? 'past-row' : '') + '">';
+                row.forEach(function(cell) {
+                    html += '<td>' + (cell || '-') + '</td>';
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+            if (validRows.length >= scrollThreshold) {
+                startAutoScroll(container);
+            }
+        }
+
+        function startAutoScroll(container, intervalTime) {
+            if (intervalTime === undefined) intervalTime = 4200;
+            var tbody = container.querySelector('tbody');
+            if (!tbody) return;
+
+            var interval = setInterval(function() {
+                var firstRow = tbody.querySelector('tr');
+                if (firstRow) {
+                    firstRow.classList.add('row-roll-up');
+                    setTimeout(function() {
+                        firstRow.classList.remove('row-roll-up');
+                        tbody.appendChild(firstRow);
+                    }, 650); 
+                }
+            }, intervalTime); 
+            
+            scrollIntervals.push(interval);
+        }
+
+        // Photo Rail: 25-Second Pause via XHR
+        var currentPhotoStep = 0;
+        var totalPhotos = 0;
+        var photoInterval = null;
+
+        function initPhotoRail() {
+            var track = document.getElementById('photo-rail-track');
+            if (!track) return;
+
+            var webAppUrl = "https://script.google.com/macros/s/AKfycbzXUs9luJNmNT5pFW00NAqeRGCdoH4x0HtbRK6H07ZaAbMfAbbE1tXlKfujGigi158TNA/exec";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", webAppUrl, true);
+            xhr.onload = function() {
+                var photoUrls = [];
+                try {
+                    photoUrls = JSON.parse(xhr.responseText);
+                } catch(e) {}
+
+                if (!photoUrls || photoUrls.length === 0) {
+                    photoUrls = ["logo.png"];
+                }
+                renderPhotoRail(photoUrls);
+            };
+            xhr.onerror = function() {
+                renderPhotoRail(["logo.png"]);
+            };
+            xhr.send();
+        }
+
+        function renderPhotoRail(photoUrls) {
+            var track = document.getElementById('photo-rail-track');
+            var shuffled = photoUrls.slice().sort(function() { return Math.random() - 0.5; });
+            totalPhotos = shuffled.length;
+            var doubleList = shuffled.concat(shuffled);
+
+            track.innerHTML = doubleList.map(function(url) {
+                return '<div class="photo-card"><img src="' + url + '" alt="Office Photo" loading="lazy" onerror="this.src=\'logo.png\'"></div>';
+            }).join('');
+
+            if (photoInterval) clearInterval(photoInterval);
+            track.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+            
+            photoInterval = setInterval(function() {
+                currentPhotoStep++;
+                track.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+                track.style.transform = 'translateY(-' + (currentPhotoStep * 224) + 'px)';
+
+                if (currentPhotoStep >= totalPhotos) {
+                    setTimeout(function() {
+                        track.style.transition = 'none';
+                        currentPhotoStep = 0;
+                        track.style.transform = 'translateY(0px)';
+                    }, 850);
+                }
+            }, 25000); 
+        }
+
+        fetchDashboardData();
+        initPhotoRail();
+        setInterval(fetchDashboardData, 60000);
+
+        // Click for fullscreen
+        document.body.addEventListener('click', function() {
+            var elem = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                }
+            }
+        });
+
+        // Hide cursor after 3s
+        var cursorTimeout;
+        document.addEventListener('mousemove', function() {
+            document.body.style.cursor = 'default';
+            clearTimeout(cursorTimeout);
+            cursorTimeout = setTimeout(function() {
+                document.body.style.cursor = 'none';
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
