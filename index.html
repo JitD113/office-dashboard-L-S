@@ -284,6 +284,11 @@
     </div>
 
     <script>
+        // TV-Safe Zero Padding Helper (Fixes Samsung TV WebKit Crash)
+        function pad2(num) {
+            return (num < 10 ? '0' : '') + num;
+        }
+
         // TV-Safe Clock
         function updateClock() {
             try {
@@ -295,9 +300,9 @@
                 var monthStr = months[now.getMonth()];
                 var yearStr = now.getFullYear();
                 
-                var hrs = String(now.getHours()).padStart(2, '0');
-                var mins = String(now.getMinutes()).padStart(2, '0');
-                var secs = String(now.getSeconds()).padStart(2, '0');
+                var hrs = pad2(now.getHours());
+                var mins = pad2(now.getMinutes());
+                var secs = pad2(now.getSeconds());
                 
                 document.getElementById('live-clock').innerText = dayStr + ', ' + dateStr + ' ' + monthStr + ' ' + yearStr + ' | ' + hrs + ':' + mins + ':' + secs;
             } catch (e) {
@@ -315,12 +320,10 @@
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 400 && xhr.responseText) {
                     parseCSVAndRender(xhr.responseText);
-                } else {
-                    setTimeout(fetchDashboardData, 5000);
                 }
             };
             xhr.onerror = function() {
-                setTimeout(fetchDashboardData, 5000);
+                setTimeout(fetchDashboardData, 3000);
             };
             xhr.send();
         }
@@ -333,8 +336,8 @@
 
         function formatDateStandard(dateObj) {
             if (!dateObj || isNaN(dateObj.getTime())) return '-';
-            var dd = String(dateObj.getDate()).padStart(2, '0');
-            var mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            var dd = pad2(dateObj.getDate());
+            var mm = pad2(dateObj.getMonth() + 1);
             var yyyy = dateObj.getFullYear();
             return dd + '/' + mm + '/' + yyyy;
         }
@@ -562,4 +565,58 @@
         }
 
         function renderPhotoRail(photoUrls) {
-            var track =
+            var track = document.getElementById('photo-rail-track');
+            var shuffled = photoUrls.slice().sort(function() { return Math.random() - 0.5; });
+            totalPhotos = shuffled.length;
+            var doubleList = shuffled.concat(shuffled);
+
+            track.innerHTML = doubleList.map(function(url) {
+                return '<div class="photo-card"><img src="' + url + '" alt="Office Photo" loading="lazy" onerror="this.src=\'logo.png\'"></div>';
+            }).join('');
+
+            if (photoInterval) clearInterval(photoInterval);
+            track.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+            
+            photoInterval = setInterval(function() {
+                currentPhotoStep++;
+                track.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+                track.style.transform = 'translateY(-' + (currentPhotoStep * 224) + 'px)';
+
+                if (currentPhotoStep >= totalPhotos) {
+                    setTimeout(function() {
+                        track.style.transition = 'none';
+                        currentPhotoStep = 0;
+                        track.style.transform = 'translateY(0px)';
+                    }, 850);
+                }
+            }, 25000); 
+        }
+
+        fetchDashboardData();
+        initPhotoRail();
+        setInterval(fetchDashboardData, 60000);
+
+        // Click for fullscreen
+        document.body.addEventListener('click', function() {
+            var elem = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                }
+            }
+        });
+
+        // Hide cursor after 3s
+        var cursorTimeout;
+        document.addEventListener('mousemove', function() {
+            document.body.style.cursor = 'default';
+            clearTimeout(cursorTimeout);
+            cursorTimeout = setTimeout(function() {
+                document.body.style.cursor = 'none';
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
