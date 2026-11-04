@@ -251,7 +251,7 @@
         <div class="card">
             <div class="card-header">Guest House Bookings (10 Rooms)</div>
             <div class="card-body" id="guesthouse-container">
-                <div class="empty-msg">Loading data...</div>
+                <div class="empty-msg">Loading Guest House entries...</div>
             </div>
         </div>
 
@@ -284,12 +284,12 @@
     </div>
 
     <script>
-        // TV-Safe Zero Padding Helper (Fixes Samsung TV WebKit Crash)
+        // TV-Safe Zero Padding Helper
         function pad2(num) {
             return (num < 10 ? '0' : '') + num;
         }
 
-        // TV-Safe Clock
+        // Live Clock
         function updateClock() {
             try {
                 var now = new Date();
@@ -314,18 +314,18 @@
 
         var csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN5svfekbhXD-4RIbXpYHhAJr-0KBBZ8U81dyrcq4gLPN70iUQW_MzDGo8Ww0vidLgihQSeenxMghe/pub?gid=91440551&single=true&output=csv";
 
-        function fetchDashboardData() {
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", csvUrl, true);
-            xhr.onload = function() {
-                if (xhr.status >= 200 && xhr.status < 400 && xhr.responseText) {
-                    parseCSVAndRender(xhr.responseText);
+        // Bulletproof fetch with redirect handling
+        async function fetchDashboardData() {
+            try {
+                var response = await fetch(csvUrl);
+                if (!response.ok) throw new Error("HTTP error " + response.status);
+                var csvText = await response.text();
+                if (csvText) {
+                    parseCSVAndRender(csvText);
                 }
-            };
-            xhr.onerror = function() {
-                setTimeout(fetchDashboardData, 3000);
-            };
-            xhr.send();
+            } catch (error) {
+                console.warn("CSV Fetch Warning:", error);
+            }
         }
 
         function cleanVal(val) {
@@ -343,8 +343,10 @@
         }
 
         function parseDate(str) {
-            if (!str || str === '-' || str === '' || str.indexOf('NaN') !== -1) return null;
+            if (!str || typeof str !== 'string') return null;
             var norm = str.trim();
+            if (norm === '' || norm === '-' || norm.indexOf('NaN') !== -1) return null;
+
             var monthMap = {
                 jan:0, january:0, feb:1, february:1, mar:2, march:2, apr:3, april:3,
                 may:4, jun:5, june:5, jul:6, july:6, aug:7, august:7,
@@ -361,13 +363,13 @@
 
                 var monthIdx = monthMap[p1.toLowerCase()];
                 if (monthIdx !== undefined) {
-                    return new Date(parseInt(p2), monthIdx, parseInt(p0));
+                    return new Date(parseInt(p2, 10), monthIdx, parseInt(p0, 10));
                 }
 
                 if (p0.length === 4) {
-                    return new Date(parseInt(p0), parseInt(p1) - 1, parseInt(p2));
+                    return new Date(parseInt(p0, 10), parseInt(p1, 10) - 1, parseInt(p2, 10));
                 }
-                return new Date(parseInt(p2), parseInt(p1) - 1, parseInt(p0));
+                return new Date(parseInt(p2, 10), parseInt(p1, 10) - 1, parseInt(p0, 10));
             }
             return null;
         }
@@ -378,6 +380,7 @@
         }
 
         function CSVToArray(text) {
+            if (!text) return [];
             var p = '', c = '', r = [];
             var q = false;
             var row = [''];
@@ -540,32 +543,22 @@
         var totalPhotos = 0;
         var photoInterval = null;
 
-        function initPhotoRail() {
+        async function initPhotoRail() {
             var track = document.getElementById('photo-rail-track');
             if (!track) return;
 
             var webAppUrl = "https://script.google.com/macros/s/AKfycbzXUs9luJNmNT5pFW00NAqeRGCdoH4x0HtbRK6H07ZaAbMfAbbE1tXlKfujGigi158TNA/exec";
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", webAppUrl, true);
-            xhr.onload = function() {
-                var photoUrls = [];
-                try {
-                    photoUrls = JSON.parse(xhr.responseText);
-                } catch(e) {}
+            var photoUrls = [];
 
-                if (!photoUrls || photoUrls.length === 0) {
-                    photoUrls = ["logo.png"];
-                }
-                renderPhotoRail(photoUrls);
-            };
-            xhr.onerror = function() {
-                renderPhotoRail(["logo.png"]);
-            };
-            xhr.send();
-        }
+            try {
+                var res = await fetch(webAppUrl);
+                photoUrls = await res.json();
+            } catch(e) {}
 
-        function renderPhotoRail(photoUrls) {
-            var track = document.getElementById('photo-rail-track');
+            if (!photoUrls || photoUrls.length === 0) {
+                photoUrls = ["logo.png"];
+            }
+
             var shuffled = photoUrls.slice().sort(function() { return Math.random() - 0.5; });
             totalPhotos = shuffled.length;
             var doubleList = shuffled.concat(shuffled);
