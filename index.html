@@ -398,6 +398,27 @@
         initPhotoTicker();
         
         setInterval(fetchDashboardData, 6000);
+        // 1. Force Fullscreen on the first remote click
+        document.body.addEventListener('click', () => {
+            let elem = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) { /* Samsung TV / Safari fallback */
+                    elem.webkitRequestFullscreen();
+                }
+            }
+        });
+
+        // 2. Hide the TV remote cursor after 3 seconds of inactivity
+        let cursorTimeout;
+        document.addEventListener('mousemove', () => {
+            document.body.style.cursor = 'default';
+            clearTimeout(cursorTimeout);
+            cursorTimeout = setTimeout(() => {
+                document.body.style.cursor = 'none';
+            }, 3000);
+        });
     </script>
 </body>
 </html>
