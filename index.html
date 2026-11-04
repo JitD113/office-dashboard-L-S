@@ -251,7 +251,7 @@
         <div class="card">
             <div class="card-header">Guest House Bookings (10 Rooms)</div>
             <div class="card-body" id="guesthouse-container">
-                <div class="empty-msg">Loading Guest House entries...</div>
+                <div class="empty-msg">Loading data...</div>
             </div>
         </div>
 
@@ -307,4 +307,259 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        var csvUrl = "
+        var csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN5svfekbhXD-4RIbXpYHhAJr-0KBBZ8U81dyrcq4gLPN70iUQW_MzDGo8Ww0vidLgihQSeenxMghe/pub?gid=91440551&single=true&output=csv";
+
+        function fetchDashboardData() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", csvUrl, true);
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 400 && xhr.responseText) {
+                    parseCSVAndRender(xhr.responseText);
+                } else {
+                    setTimeout(fetchDashboardData, 5000);
+                }
+            };
+            xhr.onerror = function() {
+                setTimeout(fetchDashboardData, 5000);
+            };
+            xhr.send();
+        }
+
+        function cleanVal(val) {
+            if (!val || val === '' || val === '-' || val.indexOf('1899') !== -1 || val.indexOf('NaN') !== -1) return '-';
+            if (val.indexOf('00:00:00') !== -1) return val.split(' ')[0];
+            return val.trim();
+        }
+
+        function formatDateStandard(dateObj) {
+            if (!dateObj || isNaN(dateObj.getTime())) return '-';
+            var dd = String(dateObj.getDate()).padStart(2, '0');
+            var mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            var yyyy = dateObj.getFullYear();
+            return dd + '/' + mm + '/' + yyyy;
+        }
+
+        function parseDate(str) {
+            if (!str || str === '-' || str === '' || str.indexOf('NaN') !== -1) return null;
+            var norm = str.trim();
+            var monthMap = {
+                jan:0, january:0, feb:1, february:1, mar:2, march:2, apr:3, april:3,
+                may:4, jun:5, june:5, jul:6, july:6, aug:7, august:7,
+                sep:8, september:8, oct:9, october:9, nov:10, november:10, dec:11, december:11
+            };
+
+            var cleaned = norm.replace(/[\.-]/g, '/');
+            var parts = cleaned.split('/');
+
+            if (parts.length === 3) {
+                var p0 = parts[0].trim();
+                var p1 = parts[1].trim();
+                var p2 = parts[2].trim();
+
+                var monthIdx = monthMap[p1.toLowerCase()];
+                if (monthIdx !== undefined) {
+                    return new Date(parseInt(p2), monthIdx, parseInt(p0));
+                }
+
+                if (p0.length === 4) {
+                    return new Date(parseInt(p0), parseInt(p1) - 1, parseInt(p2));
+                }
+                return new Date(parseInt(p2), parseInt(p1) - 1, parseInt(p0));
+            }
+            return null;
+        }
+
+        function cleanAndFormatDateCell(cellVal) {
+            var parsed = parseDate(cellVal);
+            return parsed ? formatDateStandard(parsed) : cleanVal(cellVal);
+        }
+
+        function CSVToArray(text) {
+            var p = '', c = '', r = [];
+            var q = false;
+            var row = [''];
+            for (var i = 0; i < text.length; i++) {
+                c = text[i];
+                var next = text[i+1];
+                if (c === '"') {
+                    if (q && next === '"') { row[row.length - 1] += '"'; i++; }
+                    else { q = !q; }
+                } else if (c === ',' && !q) {
+                    row.push('');
+                } else if ((c === '\r' || c === '\n') && !q) {
+                    if (c === '\r' && next === '\n') { i++; }
+                    r.push(row);
+                    row = [''];
+                } else {
+                    row[row.length - 1] += c;
+                }
+            }
+            if (row.length > 1 || row[0] !== '') r.push(row);
+            return r;
+        }
+
+        function sortRowsByDate(rows, startDateColIdx, endDateColIdx) {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            return rows.sort(function(a, b) {
+                var startA = parseDate(a[startDateColIdx]);
+                var endA = endDateColIdx !== undefined ? (parseDate(a[endDateColIdx]) || startA) : startA;
+                
+                var startB = parseDate(b[startDateColIdx]);
+                var endB = endDateColIdx !== undefined ? (parseDate(b[endDateColIdx]) || startB) : startB;
+
+                var isPastA = endA ? (endA < today) : false;
+                var isPastB = endB ? (endB < today) : false;
+
+                if (isPastA !== isPastB) return isPastA ? 1 : -1;
+                if (!isPastA) {
+                    if (!startA && !startB) return 0;
+                    if (!startA) return 1;
+                    if (!startB) return -1;
+                    return startA - startB;
+                }
+                if (!endA && !endB) return 0;
+                if (!endA) return 1;
+                if (!endB) return -1;
+                return endB - endA;
+            });
+        }
+
+        function parseCSVAndRender(csvText) {
+            var lines = CSVToArray(csvText);
+
+            var guesthouseRows = [];
+            var meetingRows = [];
+            var trainingRows = [];
+            var currentSection = 'guesthouse';
+
+            lines.forEach(function(cols) {
+                if (!cols || cols.length === 0 || cols.every(function(c) { return c === ''; })) return;
+                
+                var textJoined = cols.join(' ').toUpperCase();
+                
+                if (textJoined.indexOf('MEETINGS & REVIEWS') !== -1) { currentSection = 'meetings'; return; }
+                if (textJoined.indexOf('TRAINING PROGRAMS') !== -1) { currentSection = 'trainings'; return; }
+                if (textJoined.indexOf('GUEST HOUSE BOOKINGS') !== -1) { currentSection = 'guesthouse'; return; }
+                if (textJoined.indexOf('EXAMS SCHEDULED') !== -1) { currentSection = 'ignore'; return; }
+
+                if (textJoined.indexOf('---') !== -1 || textJoined.indexOf('ROOM NUMBER') !== -1 || textJoined.indexOf('MEETING NAME') !== -1 || textJoined.indexOf('TRAINING PROGRAM') !== -1) {
+                    return;
+                }
+
+                if (currentSection === 'guesthouse' && cols[0]) {
+                    guesthouseRows.push([cols[0], cols[1], cols[2], cleanAndFormatDateCell(cols[3]), cleanAndFormatDateCell(cols[4])]);
+                }
+                if (currentSection === 'meetings' && cols[0]) {
+                    meetingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanAndFormatDateCell(cols[3]), cleanVal(cols[5]), cleanVal(cols[6])]);
+                }
+                if (currentSection === 'trainings' && cols[0]) {
+                    trainingRows.push([cols[0], cols[1], cleanVal(cols[2]), cleanAndFormatDateCell(cols[3]), cleanAndFormatDateCell(cols[4]), cleanVal(cols[6]), cleanVal(cols[7])]);
+                }
+            });
+
+            guesthouseRows = sortRowsByDate(guesthouseRows, 3, 4);
+            meetingRows = sortRowsByDate(meetingRows, 3, 3);
+            trainingRows = sortRowsByDate(trainingRows, 3, 4);
+
+            renderTable('guesthouse-container', ['Room', 'Guest', 'Designation', 'From', 'To'], guesthouseRows, 3, 4);
+            renderTable('meetings-container', ['Meeting Name', 'Section', 'Venue', 'Date', 'Start', 'End'], meetingRows, 3, 3);
+            renderTable('trainings-container', ['Program Name', 'Section', 'Venue', 'Start Date', 'End Date', 'Start', 'End'], trainingRows, 3, 4);
+        }
+
+        function renderTable(containerId, headers, rows, startDateIdx, endDateIdx) {
+            var container = document.getElementById(containerId);
+            var validRows = rows.filter(function(row) {
+                return row.some(function(cell) { return cell && cell !== '-' && cell !== ''; });
+            });
+
+            if (!validRows || validRows.length === 0) {
+                container.innerHTML = '<div class="empty-msg">No active entries currently.</div>';
+                return;
+            }
+
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            var html = '<table><thead><tr>';
+            headers.forEach(function(h) { html += '<th>' + h + '</th>'; });
+            html += '</tr></thead><tbody>';
+
+            validRows.forEach(function(row) {
+                var startD = parseDate(row[startDateIdx]);
+                var endD = endDateIdx !== undefined ? (parseDate(row[endDateIdx]) || startD) : startD;
+                var isPast = endD ? (endD < today) : false;
+
+                html += '<tr class="' + (isPast ? 'past-row' : '') + '">';
+                row.forEach(function(cell) {
+                    html += '<td>' + (cell || '-') + '</td>';
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Single Master Ticker: Rotates ONE box every 10 seconds in order
+        var currentFlipTarget = 0;
+        function triggerStaggeredFlip() {
+            var containers = ['guesthouse-container', 'meetings-container', 'trainings-container'];
+            
+            for (var i = 0; i < 3; i++) {
+                var idx = (currentFlipTarget + i) % 3;
+                var containerId = containers[idx];
+                var container = document.getElementById(containerId);
+                if (container) {
+                    var tbody = container.querySelector('tbody');
+                    if (tbody) {
+                        var rows = tbody.querySelectorAll('tr');
+                        if (rows.length >= 2) {
+                            var firstRow = rows[0];
+                            firstRow.classList.add('row-roll-up');
+                            setTimeout(function() {
+                                firstRow.classList.remove('row-roll-up');
+                                tbody.appendChild(firstRow);
+                            }, 650);
+                            
+                            currentFlipTarget = (idx + 1) % 3;
+                            return; // Only flip 1 table per 10s tick
+                        }
+                    }
+                }
+            }
+        }
+        setInterval(triggerStaggeredFlip, 10000);
+
+        // Photo Rail: 25-Second Pause
+        var currentPhotoStep = 0;
+        var totalPhotos = 0;
+        var photoInterval = null;
+
+        function initPhotoRail() {
+            var track = document.getElementById('photo-rail-track');
+            if (!track) return;
+
+            var webAppUrl = "https://script.google.com/macros/s/AKfycbzXUs9luJNmNT5pFW00NAqeRGCdoH4x0HtbRK6H07ZaAbMfAbbE1tXlKfujGigi158TNA/exec";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", webAppUrl, true);
+            xhr.onload = function() {
+                var photoUrls = [];
+                try {
+                    photoUrls = JSON.parse(xhr.responseText);
+                } catch(e) {}
+
+                if (!photoUrls || photoUrls.length === 0) {
+                    photoUrls = ["logo.png"];
+                }
+                renderPhotoRail(photoUrls);
+            };
+            xhr.onerror = function() {
+                renderPhotoRail(["logo.png"]);
+            };
+            xhr.send();
+        }
+
+        function renderPhotoRail(photoUrls) {
+            var track =
