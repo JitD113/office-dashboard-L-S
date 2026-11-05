@@ -21,16 +21,19 @@
             position: relative;
         }
 
-        /* GLOBAL CANVAS WATERMARK BACKGROUND */
+        /* TV-SAFE GLOBAL CANVAS WATERMARK BACKGROUND */
         body::before {
             content: '';
-            position: absolute;
-            inset: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background-image: url('watermark.jpeg');
             background-position: center;
             background-size: cover;
             background-repeat: no-repeat;
-            opacity: 0.05;
+            opacity: 0.04;
             pointer-events: none;
             z-index: 0;
         }
@@ -91,6 +94,8 @@
             flex-direction: column;
             overflow: hidden;
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            position: relative;
+            z-index: 2;
         }
         .card-header {
             background-color: #212a3a;
@@ -164,4 +169,63 @@
         /* VIBRANT ROW PALETTES ON STEEL SLATE */
         #guesthouse-container tr:nth-child(4n+1) td { background-color: #2a1e18; border-left-color: #ea580c; }
         #guesthouse-container tr:nth-child(4n+2) td { background-color: #241812; border-left-color: #f97316; }
-        #guesthouse-container tr:nth-child(4n+3) td { background-color: #30221b; border-left-color: #fb923c
+        #guesthouse-container tr:nth-child(4n+3) td { background-color: #30221b; border-left-color: #fb923c; }
+        #guesthouse-container tr:nth-child(4n+4) td { background-color: #20140f; border-left-color: #c2410c; }
+
+        #meetings-container tr:nth-child(4n+1) td { background-color: #192538; border-left-color: #0284c7; }
+        #meetings-container tr:nth-child(4n+2) td { background-color: #141d2c; border-left-color: #38bdf8; }
+        #meetings-container tr:nth-child(4n+3) td { background-color: #1e2e46; border-left-color: #60a5fa; }
+        #meetings-container tr:nth-child(4n+4) td { background-color: #111824; border-left-color: #2563eb; }
+
+        #trainings-container tr:nth-child(4n+1) td { background-color: #162b21; border-left-color: #059669; }
+        #trainings-container tr:nth-child(4n+2) td { background-color: #11211a; border-left-color: #34d399; }
+        #trainings-container tr:nth-child(4n+3) td { background-color: #1c3629; border-left-color: #10b981; }
+        #trainings-container tr:nth-child(4n+4) td { background-color: #0d1a14; border-left-color: #047857; }
+
+        /* Column Width Allocations */
+        #guesthouse-container th:nth-child(1), #guesthouse-container td:nth-child(1) { width: 28%; }
+        #guesthouse-container th:nth-child(2), #guesthouse-container td:nth-child(2) { width: 26%; }
+        #guesthouse-container th:nth-child(3), #guesthouse-container td:nth-child(3) { width: 16%; }
+        #guesthouse-container th:nth-child(4), #guesthouse-container td:nth-child(4) { width: 15%; }
+        #guesthouse-container th:nth-child(5), #guesthouse-container td:nth-child(5) { width: 15%; }
+
+        /* Muted styling for past completed events */
+        tr.past-row td {
+            opacity: 0.35;
+            color: #a1a1aa;
+        }
+        .empty-msg {
+            color: #71717a;
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            font-size: 0.95rem;
+        }
+        
+        /* Airport Mechanical Split-Flap Row Animation */
+        .row-roll-up td {
+            animation: airportRoll 0.65s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes airportRoll {
+            0% { 
+                opacity: 1; 
+                transform: perspective(600px) rotateX(0deg);
+                padding: 10px 12px; 
+            }
+            50% {
+                opacity: 0.3;
+                transform: perspective(600px) rotateX(-90deg);
+                background-color: #0d1117;
+            }
+            100% { 
+                opacity: 0; 
+                transform: perspective(600px) rotateX(-90deg);
+                padding: 0 12px; 
+                font-size: 0px; 
+                line-height: 0; 
+                border-bottom: none; 
+                color: transparent; 
+            }
+        }
+
+        /*
