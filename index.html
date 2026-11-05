@@ -104,35 +104,64 @@
             height: 100%;
         }
 
-        /* Tables & Column Widths */
+        /* Floating Card Tables */
         table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0 6px;
             text-align: left;
             font-size: 0.95rem;
             table-layout: fixed;
         }
-        th, td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #27272a;
-            word-wrap: break-word;
-        }
         th {
             color: #fdba74;
             font-weight: 600;
-            background-color: rgba(39, 39, 42, 0.95);
+            background-color: #18181b;
+            padding: 8px 12px;
             position: sticky;
             top: 0;
             z-index: 10;
         }
         td {
+            padding: 10px 12px;
             color: #f4f4f5;
+            word-wrap: break-word;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
-        tr:hover td {
-            background-color: rgba(234, 88, 12, 0.12);
+        td:first-child {
+            border-top-left-radius: 6px;
+            border-bottom-left-radius: 6px;
+            border-left-width: 4px;
+            border-left-style: solid;
+        }
+        td:last-child {
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
+            border-right: 1px solid rgba(255, 255, 255, 0.04);
         }
 
-        /* Column Percentages for Guest House */
+        /* LOCKED COLOR PALETTES FOR FLOATING ROW CARDS */
+        
+        /* 1. GUEST HOUSE PALETTE (Warm Amber / Copper Tints) */
+        #guesthouse-container tr:nth-child(4n+1) td { background-color: #221915; border-left-color: #ea580c; }
+        #guesthouse-container tr:nth-child(4n+2) td { background-color: #1c1411; border-left-color: #f97316; }
+        #guesthouse-container tr:nth-child(4n+3) td { background-color: #261c17; border-left-color: #fb923c; }
+        #guesthouse-container tr:nth-child(4n+4) td { background-color: #1a120f; border-left-color: #c2410c; }
+
+        /* 2. MEETINGS PALETTE (Cool Sapphire / Indigo Tints) */
+        #meetings-container tr:nth-child(4n+1) td { background-color: #141c2b; border-left-color: #0284c7; }
+        #meetings-container tr:nth-child(4n+2) td { background-color: #111724; border-left-color: #38bdf8; }
+        #meetings-container tr:nth-child(4n+3) td { background-color: #182235; border-left-color: #60a5fa; }
+        #meetings-container tr:nth-child(4n+4) td { background-color: #0f141f; border-left-color: #2563eb; }
+
+        /* 3. TRAININGS PALETTE (Emerald / Jade Tints) */
+        #trainings-container tr:nth-child(4n+1) td { background-color: #11221a; border-left-color: #059669; }
+        #trainings-container tr:nth-child(4n+2) td { background-color: #0e1c15; border-left-color: #34d399; }
+        #trainings-container tr:nth-child(4n+3) td { background-color: #15291f; border-left-color: #10b981; }
+        #trainings-container tr:nth-child(4n+4) td { background-color: #0c1712; border-left-color: #047857; }
+
+        /* Column Width Allocations */
         #guesthouse-container th:nth-child(1), #guesthouse-container td:nth-child(1) { width: 28%; }
         #guesthouse-container th:nth-child(2), #guesthouse-container td:nth-child(2) { width: 26%; }
         #guesthouse-container th:nth-child(3), #guesthouse-container td:nth-child(3) { width: 16%; }
@@ -141,7 +170,7 @@
 
         /* Muted styling for past completed events */
         tr.past-row td {
-            opacity: 0.45;
+            opacity: 0.35;
             color: #a1a1aa;
         }
         .empty-msg {
@@ -314,7 +343,6 @@
 
         var csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN5svfekbhXD-4RIbXpYHhAJr-0KBBZ8U81dyrcq4gLPN70iUQW_MzDGo8Ww0vidLgihQSeenxMghe/pub?gid=91440551&single=true&output=csv";
 
-        // Bulletproof fetch with redirect handling
         async function fetchDashboardData() {
             try {
                 var response = await fetch(csvUrl);
@@ -508,7 +536,7 @@
             container.innerHTML = html;
         }
 
-        // Single Master Ticker: Rotates ONE box every 10 seconds in order
+        // Master Staggered Ticker: Rotates 1 box every 10s
         var currentFlipTarget = 0;
         function triggerStaggeredFlip() {
             var containers = ['guesthouse-container', 'meetings-container', 'trainings-container'];
@@ -530,7 +558,7 @@
                             }, 650);
                             
                             currentFlipTarget = (idx + 1) % 3;
-                            return; // Only flip 1 table per 10s tick
+                            return; 
                         }
                     }
                 }
