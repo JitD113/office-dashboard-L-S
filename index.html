@@ -207,12 +207,16 @@
             }
         }
 
-        /* Vertical Photo Stream Rail with Building Watermark */
+        /* Single Photo Display with Vintage Watermark Background */
         .photo-rail-wrapper {
             position: relative;
             flex: 1;
             overflow: hidden;
             background-color: #161c24;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
         }
         .watermark-bg {
             position: absolute;
@@ -221,47 +225,46 @@
             background-position: center;
             background-size: cover;
             background-repeat: no-repeat;
-            opacity: 0.10;
-            filter: grayscale(40%);
+            opacity: 0.16;
+            filter: grayscale(30%);
             z-index: 1;
             pointer-events: none;
         }
         .rail-vignette-mask {
             position: absolute;
             inset: 0;
-            background: linear-gradient(to bottom, #161c24 0%, transparent 6%, transparent 94%, #161c24 100%);
+            background: linear-gradient(to bottom, #161c24 0%, transparent 8%, transparent 92%, #161c24 100%);
             z-index: 3;
             pointer-events: none;
         }
-        .photo-rail-track {
+        .photo-display-container {
             position: relative;
             z-index: 2;
+            width: 100%;
+            height: 260px;
             display: flex;
-            flex-direction: column;
-            gap: 14px;
-            padding: 14px;
-            will-change: transform;
+            justify-content: center;
+            align-items: center;
         }
         .photo-card {
-            height: 210px;
             width: 100%;
+            height: 100%;
             border-radius: 8px;
             overflow: hidden;
             border: 1px solid #2d3748;
             background-color: #1e2430;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
-            flex-shrink: 0;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
         }
         .photo-card img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            object-position: top;
-            animation: kenBurns 20s ease-in-out infinite alternate;
+            object-position: center;
+            transition: opacity 1s ease-in-out;
+            opacity: 1;
         }
-        @keyframes kenBurns {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.08); }
+        .photo-card img.fade-out {
+            opacity: 0;
         }
     </style>
 </head>
@@ -301,13 +304,17 @@
             </div>
         </div>
 
-        <!-- Right Column (25%): Vertical Office Highlights Photo Rail -->
+        <!-- Right Column (25%): Single Photo Highlight with Watermark Background -->
         <div class="card">
             <div class="card-header">Office Highlights</div>
             <div class="photo-rail-wrapper">
                 <div class="watermark-bg"></div>
                 <div class="rail-vignette-mask"></div>
-                <div class="photo-rail-track" id="photo-rail-track"></div>
+                <div class="photo-display-container">
+                    <div class="photo-card">
+                        <img id="single-photo-img" src="logo.png" alt="Office Highlight">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -566,50 +573,51 @@
         }
         setInterval(triggerStaggeredFlip, 10000);
 
-        // Photo Rail: 25-Second Pause
-        var currentPhotoStep = 0;
-        var totalPhotos = 0;
+        // Photo Rail: Single Card Cross-Fade Every 15 Seconds
+        var photoUrlsList = [];
+        var currentPhotoIdx = 0;
         var photoInterval = null;
 
         async function initPhotoRail() {
-            var track = document.getElementById('photo-rail-track');
-            if (!track) return;
-
             var webAppUrl = "https://script.google.com/macros/s/AKfycbzXUs9luJNmNT5pFW00NAqeRGCdoH4x0HtbRK6H07ZaAbMfAbbE1tXlKfujGigi158TNA/exec";
-            var photoUrls = [];
 
             try {
                 var res = await fetch(webAppUrl);
-                photoUrls = await res.json();
+                photoUrlsList = await res.json();
             } catch(e) {}
 
-            if (!photoUrls || photoUrls.length === 0) {
-                photoUrls = ["logo.png"];
+            if (!photoUrlsList || photoUrlsList.length === 0) {
+                photoUrlsList = ["logo.png"];
             }
 
-            var shuffled = photoUrls.slice().sort(function() { return Math.random() - 0.5; });
-            totalPhotos = shuffled.length;
-            var doubleList = shuffled.concat(shuffled);
-
-            track.innerHTML = doubleList.map(function(url) {
-                return '<div class="photo-card"><img src="' + url + '" alt="Office Photo" loading="lazy" onerror="this.src=\'logo.png\'"></div>';
-            }).join('');
+            photoUrlsList.sort(function() { return Math.random() - 0.5; });
+            
+            var imgElem = document.getElementById('single-photo-img');
+            if (imgElem) {
+                imgElem.src = photoUrlsList[0];
+            }
 
             if (photoInterval) clearInterval(photoInterval);
-            track.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-            
-            photoInterval = setInterval(function() {
-                currentPhotoStep++;
-                track.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-                track.style.transform = 'translateY(-' + (currentPhotoStep * 224) + 'px)';
 
-                if (currentPhotoStep >= totalPhotos) {
+            photoInterval = setInterval(function() {
+                if (photoUrlsList.length <= 1) return;
+                
+                var img = document.getElementById('single-photo-img');
+                if (!img) return;
+
+                img.classList.add('fade-out');
+
+                setTimeout(function() {
+                    currentPhotoIdx = (currentPhotoIdx + 1) % photoUrlsList.length;
+                    img.src = photoUrlsList[currentPhotoIdx];
+                    
+                    img.onload = function() {
+                        img.classList.remove('fade-out');
+                    };
                     setTimeout(function() {
-                        track.style.transition = 'none';
-                        currentPhotoStep = 0;
-                        track.style.transform = 'translateY(0px)';
-                    }, 850);
-                }
+                        img.classList.remove('fade-out');
+                    }, 120);
+                }, 1000); 
             }, 25000); 
         }
 
