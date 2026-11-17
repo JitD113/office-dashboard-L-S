@@ -631,5 +631,139 @@
             }, 3000);
         });
     </script>
+<style>
+  #tv-rotator-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    overflow: hidden;
+    z-index: 99999;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  #tv-rotator-badge {
+    position: fixed;
+    top: 10px;
+    right: 14px;
+    background-color: rgba(15, 23, 42, 0.85);
+    color: #ffffff;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    z-index: 100000;
+  }
+  #tv-rotator-frame {
+    border: none;
+    display: block;
+    -webkit-transform-origin: 0 0;
+    transform-origin: 0 0;
+  }
+</style>
+
+<div id="tv-rotator-overlay">
+  <div id="tv-rotator-badge">Venue in 08:00</div>
+  <iframe id="tv-rotator-frame" src="" scrolling="no"></iframe>
+</div>
+
+<script>
+(function() {
+  // ================= CONFIGURATION =================
+  // 1. AuditDiws Tab (8 Minutes)
+  var AUDIT_DIWS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN5svfekbhXD-4RIbXpYHhAJr-0KBBZ8U81dyrcq4gLPN70iUQW_MzDGo8Ww0vidLgihQSeenxMghe/pubhtml?gid=119424620&single=true";
+  var AUDIT_DIWS_SCALE = 0.75;   // Adjust zoom (e.g., 0.65 to fit more, 0.85 for larger text)
+  var AUDIT_DIWS_MINS = 8;
+
+  // 2. Venue Tab (6 Minutes)
+  var VENUE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSN5svfekbhXD-4RIbXpYHhAJr-0KBBZ8U81dyrcq4gLPN70iUQW_MzDGo8Ww0vidLgihQSeenxMghe/pubhtml?gid=325629598&single=true";
+  var VENUE_SCALE = 0.75;        // Independent zoom for Venue table
+  var VENUE_MINS = 6;
+
+  // 3. Original Guest House / Office Dashboard (5 Minutes)
+  var DASHBOARD_MINS = 5;
+  // =================================================
+
+  var overlay = document.getElementById("tv-rotator-overlay");
+  var badgeEl = document.getElementById("tv-rotator-badge");
+  var frameEl = document.getElementById("tv-rotator-frame");
+  var countdownTimer = null;
+
+  function applyScale(scale) {
+    var expandedPct = (100 / scale).toFixed(2) + "%";
+    frameEl.style.width = expandedPct;
+    frameEl.style.height = expandedPct;
+    frameEl.style.webkitTransform = "scale(" + scale + ")";
+    frameEl.style.transform = "scale(" + scale + ")";
+  }
+
+  function buildSheetUrl(rawUrl) {
+    var cleanUrl = rawUrl.split("#")[0];
+    var sep = cleanUrl.indexOf("?") === -1 ? "?" : "&";
+    return cleanUrl + sep + "widget=false&headers=false&chrome=false&cb=" + new Date().getTime();
+  }
+
+  function formatTime(totalSeconds) {
+    var m = Math.floor(totalSeconds / 60);
+    var s = totalSeconds % 60;
+    return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+  }
+
+  function startCountdown(durationMins, nextLabel, onComplete) {
+    var remaining = durationMins * 60;
+    badgeEl.innerHTML = nextLabel + " in " + formatTime(remaining);
+
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+    }
+    countdownTimer = setInterval(function() {
+      remaining--;
+      if (remaining <= 0) {
+        clearInterval(countdownTimer);
+        onComplete();
+      } else {
+        badgeEl.innerHTML = nextLabel + " in " + formatTime(remaining);
+      }
+    }, 1000);
+  }
+
+  // Stage 1: Show AuditDiws tab for 8 minutes
+  function runAuditDiwsPhase() {
+    applyScale(AUDIT_DIWS_SCALE);
+    frameEl.src = buildSheetUrl(AUDIT_DIWS_URL);
+    overlay.style.display = "block";
+
+    startCountdown(AUDIT_DIWS_MINS, "Venue", function() {
+      runVenuePhase();
+    });
+  }
+
+  // Stage 2: Show Venue tab for 6 minutes
+  function runVenuePhase() {
+    applyScale(VENUE_SCALE);
+    frameEl.src = buildSheetUrl(VENUE_URL);
+    overlay.style.display = "block";
+
+    startCountdown(VENUE_MINS, "Dashboard", function() {
+      runDashboardPhase();
+    });
+  }
+
+  // Stage 3: Hide overlay to show original Guest House Dashboard for 5 minutes
+  function runDashboardPhase() {
+    overlay.style.display = "none";
+    frameEl.src = ""; // Frees TV memory during the dashboard phase
+
+    setTimeout(function() {
+      runAuditDiwsPhase();
+    }, DASHBOARD_MINS * 60 * 1000);
+  }
+
+  // Start the continuous 8 -> 6 -> 5 minute loop
+  runAuditDiwsPhase();
+})();
+</script>
 </body>
 </html>
